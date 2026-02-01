@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许明文传输并禁用对特定域名的证书校验 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">amap.com</domain>
+        <domain includeSubdomains="true">autonavi.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
