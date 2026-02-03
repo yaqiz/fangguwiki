@@ -1,0 +1,35 @@
+name: fanggu_flutter
+version: 0.1.0+1
+description: FangGu Flutter app
+publish_to: "none"
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: any
+  amap_map: ^1.0.15
+  x_amap_base: ^1.0.3
+  sqflite: any
+  path_provider: any
+  path: any
+  image_picker: any
+  permission_handler: any
+  url_launcher: any
+  http: any
+
+dev_dependencies:
+  flutter_launcher_icons: any
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/tower.png
+    - assets/icons/building.png
+    - assets/icons/grotto.png
+flutter_icons:
+  android: true
+  ios: true
+  image_path: assets/icon.png
