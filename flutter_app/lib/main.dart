@@ -49,9 +49,27 @@ class _FangGuAppState extends State<FangGuApp> {
       const AMapPrivacyStatement(hasAgree: true, hasShow: true, hasContains: true),
     );
 
+    const twitterBlue = Color(0xFF1360A4);
+    final colorScheme = ColorScheme.light(
+      primary: twitterBlue,
+      secondary: twitterBlue,
+      surface: Colors.white,
+      background: const Color(0xFFF5FAFF),
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.black87,
+      onBackground: Colors.black87,
+    );
     return MaterialApp(
       title: 'FangGu',
-      theme: ThemeData(useMaterial3: true),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: colorScheme,
+        primaryColor: twitterBlue,
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(backgroundColor: colorScheme.primary),
+        ),
+      ),
       home: HomePage(store: _store),
     );
   }
@@ -83,7 +101,10 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Scaffold(
-      body: pages[_index],
+      body: IndexedStack(
+        index: _index,
+        children: pages,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -122,6 +143,7 @@ class _MapPageState extends State<MapPage> {
   final Map<HeritageType, BitmapDescriptor> _iconCache = {};
   bool _iconsReady = false;
   final Map<int, Marker> _markerCache = {};
+  int _editSession = 0;
 
   @override
   void initState() {
@@ -292,10 +314,11 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _openEditSheet(BuildContext context, HeritagePin? pin) async {
+    final key = pin?.id != null ? ValueKey('edit-${pin!.id}') : ValueKey('new-${++_editSession}');
     final result = await showModalBottomSheet<PinEditResult>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => PinEditSheet(initialPin: pin),
+      builder: (ctx) => PinEditSheet(key: key, initialPin: pin),
     );
 
     if (result == null) return;
@@ -498,8 +521,7 @@ class _MapPageState extends State<MapPage> {
     final lon = pin.longitude;
 
     final List<Uri> candidates = [
-      Uri.parse('androidamap://navi?sourceApplication=fanggu&poiname=$name&lat=$lat&lon=$lon&dev=0&style=2'),
-      Uri.parse('amapuri://route/plan/?dlat=$lat&dlon=$lon&dname=$name&dev=0&t=0'),
+      Uri.parse('https://uri.amap.com/marker?position=$lon,$lat&name=$name&src=fanggu'),
       if (Platform.isIOS)
         Uri.parse('http://maps.apple.com/?q=$lat,$lon')
       else
@@ -582,7 +604,7 @@ class ListPage extends StatelessWidget {
     final result = await showModalBottomSheet<PinEditResult>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => PinEditSheet(initialPin: pin),
+      builder: (ctx) => PinEditSheet(key: ValueKey('edit-${pin.id}'), initialPin: pin),
     );
     if (result == null) return;
     if (result.action == PinEditAction.save && result.pin != null) {
@@ -726,6 +748,21 @@ class _PinEditSheetState extends State<PinEditSheet> {
   }
 
   @override
+  void didUpdateWidget(covariant PinEditSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPin?.id != widget.initialPin?.id) {
+      final pin = widget.initialPin;
+      _name.text = pin?.name ?? '';
+      _desc.text = pin?.description ?? '';
+      _type = pin?.type ?? HeritageType.tower;
+      _level = pin?.level ?? HeritageLevel.defaultLevel;
+      _imagePath = pin?.imagePath;
+      _isConservator = false;
+      _showPreview = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isEditing = widget.initialPin != null;
     return Padding(
@@ -749,12 +786,12 @@ class _PinEditSheetState extends State<PinEditSheet> {
                     context,
                     PinEditResult(action: PinEditAction.delete, pin: widget.initialPin),
                   ),
-                  child: const Text('取消', style: TextStyle(color: Colors.red, fontSize: 11)),
+                  child: const Text('删除', style: TextStyle(color: Colors.red, fontSize: 11)),
                 ),
               ),
             Row(
               children: [
-                Text(isEditing ? '编辑遗迹' : '新发现', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(isEditing ? '编辑足迹' : '新发现', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -778,6 +815,9 @@ class _PinEditSheetState extends State<PinEditSheet> {
                       return ChoiceChip(
                         label: Text(level.label, style: const TextStyle(fontSize: 10)),
                         selected: _level == level,
+                        selectedColor: const Color(0x401360A4),
+                        backgroundColor: Colors.white,
+                        checkmarkColor: const Color(0xFF1360A4),
                         onSelected: (_) => setState(() => _level = level),
                       );
                     }).toList(),
@@ -798,6 +838,9 @@ class _PinEditSheetState extends State<PinEditSheet> {
                       return ChoiceChip(
                         label: Text(type.label, style: const TextStyle(fontSize: 10)),
                         selected: _type == type,
+                        selectedColor: const Color(0x401360A4),
+                        backgroundColor: Colors.white,
+                        checkmarkColor: const Color(0xFF1360A4),
                         onSelected: (_) => setState(() => _type = type),
                       );
                     }).toList(),
@@ -869,6 +912,10 @@ class _PinEditSheetState extends State<PinEditSheet> {
                 if (!isEditing) const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1360A4),
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: () {
                       final pin = HeritagePin(
                         id: widget.initialPin?.id,
@@ -889,16 +936,7 @@ class _PinEditSheetState extends State<PinEditSheet> {
                 ),
               ],
             ),
-            if (isEditing)
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    PinEditResult(action: PinEditAction.delete, pin: widget.initialPin),
-                  ),
-                  child: const Text('删除此记录', style: TextStyle(color: Colors.red, fontSize: 11)),
-                ),
-              ),
+            // 删除底部按钮（已移动到右上角）
           ],
         ),
       ),
@@ -1108,21 +1146,6 @@ class PinStore {
       },
     );
     await reload();
-    if (pins.value.isEmpty) {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      await insertPin(
-        HeritagePin(
-          name: '测试点',
-          type: HeritageType.tower,
-          level: HeritageLevel.defaultLevel,
-          latitude: 39.909187,
-          longitude: 116.397451,
-          description: '默认测试点',
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-    }
   }
 
   Future<void> reload() async {
